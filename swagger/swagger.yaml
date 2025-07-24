@@ -1,0 +1,362 @@
+openapi: 3.0.3
+info:
+  title: Electricity Metering API
+  description: API for managing electricity meter installations with photo-based verification
+  version: 1.0.0
+servers:
+  - url: /api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, admin, installer]
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+    Meter:
+      type: object
+      properties:
+        id:
+          type: string
+        serial_number:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+          enum: [available, installed]
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: string
+        meter_id:
+          $ref: '#/components/schemas/Meter'
+        customer_id:
+          $ref: '#/components/schemas/Customer'
+        installer_id:
+          $ref: '#/components/schemas/User'
+        created_date:
+          type: string
+          format: date-time
+    Installation:
+      type: object
+      properties:
+        id:
+          type: string
+        assignment_id:
+          $ref: '#/components/schemas/Assignment'
+        location:
+          type: string
+        photo:
+          type: string
+          description: Base64-encoded image
+        installation_date:
+          type: string
+          format: date-time
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+  /auth/register-super-admin:
+    post:
+      summary: Register a super admin (restricted)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Super admin created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Registration disabled
+  /users:
+    post:
+      summary: Create a user (super admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, installer]
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Unauthorized
+    get:
+      summary: List users (super admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Unauthorized
+  /customers:
+    post:
+      summary: Create a customer (super admin/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Unauthorized
+    get:
+      summary: List customers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+  /meters:
+    post:
+      summary: Create a meter (super admin/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Meter'
+      responses:
+        '201':
+          description: Meter created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Unauthorized
+    get:
+      summary: List meters
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of meters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meter'
+  /assignments:
+    post:
+      summary: Create an assignment (super admin/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meter_id:
+                  type: string
+                customer_id:
+                  type: string
+                installer_id:
+                  type: string
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Unauthorized
+    get:
+      summary: List assignments
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+  /installations:
+    post:
+      summary: Submit an installation (super admin/admin/installer)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                assignment_id:
+                  type: string
+                location:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Installation recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: string
+        '400':
+          description: Invalid input
+        '403':
+          description: Unauthorized
+    get:
+      summary: List installations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of installations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Installation'
+security:
+  - bearerAuth: []
